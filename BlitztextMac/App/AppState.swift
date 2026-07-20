@@ -362,6 +362,35 @@ final class AppState {
         return !value.isEmpty
     }
 
+    // MARK: - Settings Backup
+
+    func exportSettings(to url: URL) throws {
+        let backup = SettingsBackup(
+            formatVersion: SettingsBackup.currentFormatVersion,
+            app: appSettings,
+            transcription: transcriptionSettings,
+            textImprovement: textImprovementSettings,
+            dampfAblassen: dampfAblassenSettings,
+            emojiText: emojiTextSettings
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(backup).write(to: url, options: .atomic)
+    }
+
+    func importSettings(from url: URL) throws {
+        let backup = try JSONDecoder().decode(SettingsBackup.self, from: Data(contentsOf: url))
+        guard backup.formatVersion == SettingsBackup.currentFormatVersion else {
+            throw SettingsBackupError.unsupportedFormat
+        }
+
+        transcriptionSettings = backup.transcription
+        textImprovementSettings = backup.textImprovement
+        dampfAblassenSettings = backup.dampfAblassen
+        emojiTextSettings = backup.emojiText
+        appSettings = backup.app
+    }
+
     // MARK: - Settings Persistence
 
     private static let settingsURL: URL = {
@@ -603,6 +632,28 @@ private struct SettingsContainer: Codable {
     var textImprovement: TextImprovementSettings
     var dampfAblassen: DampfAblassenSettings?
     var emojiText: EmojiTextSettings?
+}
+
+private struct SettingsBackup: Codable {
+    static let currentFormatVersion = 1
+
+    let formatVersion: Int
+    let app: AppSettings
+    let transcription: TranscriptionSettings
+    let textImprovement: TextImprovementSettings
+    let dampfAblassen: DampfAblassenSettings
+    let emojiText: EmojiTextSettings
+}
+
+private enum SettingsBackupError: LocalizedError {
+    case unsupportedFormat
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedFormat:
+            return "Diese Exportdatei stammt aus einer nicht unterstützten Blitztext-Version."
+        }
+    }
 }
 
 // MARK: - Notification for Popover Dismissal

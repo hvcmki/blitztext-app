@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct SettingsContentView: View {
     @Bindable var appState: AppState
@@ -786,6 +787,8 @@ struct CustomizeSettingsView: View {
                 }
             }
 
+            SettingsBackupSection(appState: appState)
+
         }
         .padding(16)
     }
@@ -797,6 +800,112 @@ struct CustomizeSettingsView: View {
             appState.textImprovementSettings.customTerms.append(trimmed)
         }
         newTerm = ""
+    }
+}
+
+private struct SettingsBackupSection: View {
+    @Bindable var appState: AppState
+    @State private var statusText: String?
+    @State private var errorText: String?
+    @State private var pendingImportURL: URL?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Einstellungen sichern")
+
+            Text("Exportiere Prompts, Fachbegriffe und Modellauswahl als Datei. Der OpenAI API Key und lokale Modelle werden nicht mitgesichert.")
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Button("Einstellungen exportieren") { exportSettings() }
+                    .buttonStyle(SubtleButtonStyle())
+
+                Button("Einstellungen importieren") { chooseSettingsImport() }
+                    .buttonStyle(SubtleButtonStyle())
+            }
+
+            if let statusText {
+                Text(statusText)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.green)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let errorText {
+                Text(errorText)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .alert(
+            "Einstellungen importieren?",
+            isPresented: Binding(
+                get: { pendingImportURL != nil },
+                set: { if !$0 { pendingImportURL = nil } }
+            ),
+            presenting: pendingImportURL
+        ) { url in
+            Button("Abbrechen", role: .cancel) { pendingImportURL = nil }
+            Button("Importieren") {
+                importSettings(from: url)
+                pendingImportURL = nil
+            }
+        } message: { _ in
+            Text("Die aktuellen Prompts, Fachbegriffe und weiteren App-Einstellungen werden ersetzt. Der API Key bleibt unverändert.")
+        }
+    }
+
+    private func exportSettings() {
+        statusText = nil
+        errorText = nil
+
+        let panel = NSSavePanel()
+        panel.title = "Blitztext-Einstellungen exportieren"
+        panel.message = "Speichere die Datei zunächst lokal, zum Beispiel in Downloads."
+        panel.nameFieldStringValue = "Blitztext-Einstellungen.json"
+        panel.directoryURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try appState.exportSettings(to: url)
+            statusText = "Einstellungen exportiert: \(url.lastPathComponent)"
+        } catch {
+            errorText = "Export fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    private func chooseSettingsImport() {
+        statusText = nil
+        errorText = nil
+
+        let panel = NSOpenPanel()
+        panel.title = "Blitztext-Einstellungen importieren"
+        panel.message = "Wähle eine zuvor exportierte Blitztext-Einstellungsdatei aus."
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.json]
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        pendingImportURL = url
+    }
+
+    private func importSettings(from url: URL) {
+        statusText = nil
+        errorText = nil
+
+        do {
+            try appState.importSettings(from: url)
+            statusText = "Einstellungen importiert. Der API Key wurde nicht verändert."
+        } catch {
+            errorText = "Import fehlgeschlagen: \(error.localizedDescription)"
+        }
     }
 }
 
