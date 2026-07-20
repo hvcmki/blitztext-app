@@ -175,11 +175,26 @@ struct TranscriptionSettings: Codable {
 struct DampfAblassenSettings: Codable {
     var systemPrompt: String = "Du erhältst ein emotional gesprochenes Transkript. Erkenne zuerst das eigentliche Ziel, Anliegen und den wahren Frust der Person. Formuliere daraus eine klare, respektvolle und wirksame Nachricht, mit der die Person ihr Ziel eher erreicht. Bewahre relevante Fakten, konkrete Probleme, Grenzen, Erwartungen und die nötige Dringlichkeit. Entferne Beleidigungen, Drohungen, Sarkasmus, Unterstellungen und unnötige Eskalation. Wenn mehrere Vorwürfe genannt werden, verdichte sie auf die entscheidenden Kernpunkte. Der Ton soll ruhig, menschlich, bestimmt und lösungsorientiert sein. Gib NUR die fertige Nachricht zurück."
     var customName: String = ""
+    var rewriteModel: RewriteModel = .gpt4o
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case systemPrompt, customName, rewriteModel
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt) ?? Self().systemPrompt
+        customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? ""
+        rewriteModel = try container.decodeIfPresent(RewriteModel.self, forKey: .rewriteModel) ?? .gpt4o
+    }
 }
 
 struct EmojiTextSettings: Codable {
     var emojiDensity: EmojiDensity = .mittel
     var customName: String = ""
+    var rewriteModel: RewriteModel = .gpt4oMini
 
     enum EmojiDensity: String, Codable, CaseIterable, Identifiable {
         case wenig
@@ -196,14 +211,44 @@ struct EmojiTextSettings: Codable {
             }
         }
     }
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case emojiDensity, customName, rewriteModel
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        emojiDensity = try container.decodeIfPresent(EmojiDensity.self, forKey: .emojiDensity) ?? .mittel
+        customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? ""
+        rewriteModel = try container.decodeIfPresent(RewriteModel.self, forKey: .rewriteModel) ?? .gpt4oMini
+    }
 }
 
 struct TextImprovementSettings: Codable {
-    var systemPrompt: String = ""
+    static let defaultSystemPrompt = """
+    Überarbeite den Text so, als hätte ihn derselbe Mensch nach dem Diktieren noch einmal selbst korrigiert.
+
+    Entferne Versprecher, Füllwörter und Wiederholungen. Verbessere Grammatik, Rechtschreibung und Zeichensetzung.
+
+    Schreibe direkt, klar und natürlich. Verwende kurze Sätze. Keine aufgeblähte Sprache, keine KI-Floskeln, keine unnötigen Einleitungen, Zusammenfassungen oder Höflichkeitsformulierungen. Lieber etwas kürzer als zu lang.
+
+    Verändere die Aussage nicht. Erfinde nichts und ergänze keine Informationen. Erhalte Zahlen, Namen, Fristen und Fachbegriffe inhaltlich korrekt. Korrigiere offensichtliche Transkriptions- und Schreibfehler.
+
+    Der Text soll professionell wirken, aber wie von einem Menschen geschrieben sein: sachlich, pragmatisch und ohne künstlich perfekt zu klingen.
+
+    Im Zweifel kürzen statt erweitern.
+
+    Gib ausschließlich den überarbeiteten Text zurück.
+    """
+
+    var systemPrompt: String = defaultSystemPrompt
     var customTerms: [String] = []
     var context: String = ""
     var tone: TextTone = .neutral
     var customName: String = ""
+    var rewriteModel: RewriteModel = .gpt4oMini
 
     enum TextTone: String, Codable, CaseIterable, Identifiable {
         case formal
@@ -219,5 +264,21 @@ struct TextImprovementSettings: Codable {
             case .casual: return "Locker"
             }
         }
+    }
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case systemPrompt, customTerms, context, tone, customName, rewriteModel
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        systemPrompt = try container.decodeIfPresent(String.self, forKey: .systemPrompt) ?? Self.defaultSystemPrompt
+        customTerms = try container.decodeIfPresent([String].self, forKey: .customTerms) ?? []
+        context = try container.decodeIfPresent(String.self, forKey: .context) ?? ""
+        tone = try container.decodeIfPresent(TextTone.self, forKey: .tone) ?? .neutral
+        customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? ""
+        rewriteModel = try container.decodeIfPresent(RewriteModel.self, forKey: .rewriteModel) ?? .gpt4oMini
     }
 }

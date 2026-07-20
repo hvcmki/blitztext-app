@@ -630,6 +630,8 @@ struct CustomizeSettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Blitztext+")
 
+                ModelPicker(selection: $appState.textImprovementSettings.rewriteModel)
+
                 // Tone
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Schreibstil")
@@ -685,6 +687,8 @@ struct CustomizeSettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Blitztext $%&!")
 
+                ModelPicker(selection: $appState.dampfAblassenSettings.rewriteModel)
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Eigene Anweisung")
                         .font(.system(size: 11))
@@ -713,6 +717,8 @@ struct CustomizeSettingsView: View {
             // MARK: Blitztext :)
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Blitztext :)")
+
+                ModelPicker(selection: $appState.emojiTextSettings.rewriteModel)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Emoji-Dichte")
@@ -791,6 +797,26 @@ struct CustomizeSettingsView: View {
             appState.textImprovementSettings.customTerms.append(trimmed)
         }
         newTerm = ""
+    }
+}
+
+private struct ModelPicker: View {
+    @Binding var selection: RewriteModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Modell")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: $selection) {
+                ForEach(RewriteModel.allCases) { model in
+                    Text(model.displayName).tag(model)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.small)
+        }
     }
 }
 

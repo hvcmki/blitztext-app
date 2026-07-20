@@ -99,7 +99,8 @@ final class TextImprovementWorkflow: Workflow {
 
                 let improved = try await LLMService.improve(
                     text: cleanedRawText,
-                    settings: settings
+                    settings: settings,
+                    model: settings.rewriteModel
                 )
 
                 let cleanedImproved = TranscriptionQualityService.cleanedTranscript(improved)

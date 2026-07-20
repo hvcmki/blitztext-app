@@ -101,7 +101,8 @@ final class DampfAblassenWorkflow: Workflow {
 
                 let answer = try await LLMService.dampfAblassen(
                     text: cleanedRawText,
-                    systemPrompt: settings.systemPrompt
+                    systemPrompt: settings.systemPrompt,
+                    model: settings.rewriteModel
                 )
                 let cleanedAnswer = TranscriptionQualityService.cleanedTranscript(answer)
                 guard cleanedAnswer != "KEINE_AUFNAHME_ERKANNT" else {

@@ -20,9 +20,20 @@ enum LLMError: LocalizedError {
     }
 }
 
-enum RewriteModel: String {
-    case fastEdit = "gpt-4o-mini"
-    case rageMode = "gpt-4o"
+enum RewriteModel: String, Codable, CaseIterable, Identifiable {
+    case gpt4oMini = "gpt-4o-mini"
+    case gpt56Terra = "gpt-5.6-terra"
+    case gpt4o = "gpt-4o"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .gpt4oMini: return "GPT-4o mini"
+        case .gpt56Terra: return "GPT-5.6 Terra"
+        case .gpt4o: return "GPT-4o"
+        }
+    }
 }
 
 private struct OpenAIChatRequest: Encodable {
@@ -33,7 +44,7 @@ private struct OpenAIChatRequest: Encodable {
 
     let model: String
     let messages: [Message]
-    let temperature: Double
+    let temperature: Double?
 }
 
 private struct OpenAIChatResponse: Decodable {
@@ -71,7 +82,7 @@ enum LLMService {
     static func improve(
         text: String,
         settings: TextImprovementSettings,
-        model: RewriteModel = .fastEdit
+        model: RewriteModel
     ) async throws -> String {
         try await complete(
             text: text,
@@ -84,7 +95,7 @@ enum LLMService {
     static func dampfAblassen(
         text: String,
         systemPrompt: String,
-        model: RewriteModel = .rageMode
+        model: RewriteModel
     ) async throws -> String {
         try await complete(
             text: text,
@@ -97,7 +108,7 @@ enum LLMService {
     static func addEmojis(
         text: String,
         settings: EmojiTextSettings,
-        model: RewriteModel = .fastEdit
+        model: RewriteModel
     ) async throws -> String {
         try await complete(
             text: text,
@@ -123,7 +134,7 @@ enum LLMService {
                 .init(role: "system", content: systemPrompt),
                 .init(role: "user", content: text),
             ],
-            temperature: temperature
+            temperature: model == .gpt56Terra ? nil : temperature
         )
 
         var request = URLRequest(url: chatCompletionsURL)

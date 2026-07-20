@@ -101,7 +101,8 @@ final class EmojiTextWorkflow: Workflow {
 
                 let result = try await LLMService.addEmojis(
                     text: cleanedRawText,
-                    settings: settings
+                    settings: settings,
+                    model: settings.rewriteModel
                 )
                 let cleanedResult = TranscriptionQualityService.cleanedTranscript(result)
                 guard cleanedResult != "KEINE_AUFNAHME_ERKANNT" else {
